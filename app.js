@@ -1,13 +1,30 @@
 const puppeteer = require('puppeteer');
 const fs = require('fs');
 const { send } = require('process');
+const nodecorn1 = require('node-cron');
+
+const nodecron2 = require('node-cron');  
+const express = require('express');
+
+
+const app = express();
+const PORT = process.env.PORT || 7860;
+
+app.get('/', (req, res) => {
+    res.send('Hello World');
+});
 
 const getTrades = async (url) => {
-    const browser = await puppeteer.launch();
+    const browser = await puppeteer.launch({
+        executablePath: '/usr/bin/google-chrome',
+        headless: 'new',
+        ignoreDefaultArgs: ['--disable-extensions'],
+        args: ['--no-sandbox', '--disable-setuid-sandbox'],
+});
     const page = await browser.newPage();
     await page.goto(url);
     
-    await new Promise(r => setTimeout(r, 1000));
+    await new Promise(r => setTimeout(r, 5000));
     await page.screenshot({path: 'example.png'});
     const trades = await page.evaluate(() => {
         const tradeList = document.querySelectorAll('.list-box.trader-current__details-list .list-box-container');
@@ -68,30 +85,52 @@ const main = async () => {
     const LocalTrades3 = JSON.parse(LocalData3);
     const LocalTrades4 = JSON.parse(LocalData4);
 
-    if (JSON.stringify(trades1) !== JSON.stringify(LocalTrades1)) {
-        await sendTelegramMessage('Trader 1 has new trades' + '\n' + JSON.stringify(trades1));
+    const newTrades1 = trades1.filter(trade => !LocalTrades1.find(t => t.pair === trade.pair));
+    const newTrades2 = trades2.filter(trade => !LocalTrades2.find(t => t.pair === trade.pair));
+    const newTrades3 = trades3.filter(trade => !LocalTrades3.find(t => t.pair === trade.pair));
+    const newTrades4 = trades4.filter(trade => !LocalTrades4.find(t => t.pair === trade.pair));
+
+    if (newTrades1.length > 0) {
+        let tradess = '';
+        newTrades1.forEach(trade => {
+            tradess += `${trade.pair} - ${trade.price} - ${trade.direction}\n`;
+        });
+        sendTelegramMessage(`New trades from trader 1: ${tradess}`);
         fs.writeFileSync('Data/data1.json', JSON.stringify(trades1));
     }
-    if (JSON.stringify(trades2) !== JSON.stringify(LocalTrades2)) {
-        await sendTelegramMessage('Trader 2 has new trades' + '\n' + JSON.stringify(trades2));
+    if (newTrades2.length > 0) {
+        let tradess = '';
+        newTrades2.forEach(trade => {
+            tradess += `${trade.pair} - ${trade.price} - ${trade.direction}\n`;
+        });
+        sendTelegramMessage(`New trades from trader 2: ${tradess}`);
         fs.writeFileSync('Data/data2.json', JSON.stringify(trades2));
     }
-    if (JSON.stringify(trades3) !== JSON.stringify(LocalTrades3)) {
-        await sendTelegramMessage('Trader 3 has new trades' + '\n' + JSON.stringify(trades3));
+    if (newTrades3.length > 0) {
+        let tradess = '';
+        newTrades3.forEach(trade => {
+            tradess += `${trade.pair} - ${trade.price} - ${trade.direction}\n`;
+        });
+        sendTelegramMessage(`New trades from trader 3: ${tradess}`);
         fs.writeFileSync('Data/data3.json', JSON.stringify(trades3));
     }
-    if (JSON.stringify(trades4) !== JSON.stringify(LocalTrades4)) {
-        await sendTelegramMessage('Trader 4 has new trades' + '\n' + JSON.stringify(trades4));
+    if (newTrades4.length > 0) {
+        let tradess = '';
+        newTrades4.forEach(trade => {
+            tradess += `${trade.pair} - ${trade.price} - ${trade.direction}\n`;
+        });
+        sendTelegramMessage(`New trades from trader 4: ${tradess}`);
         fs.writeFileSync('Data/data4.json', JSON.stringify(trades4));
     }
-
+    
 }
 
-const mainLoop = async () => {
-    while (true) {
-        await main();
-        await new Promise(r => setTimeout(r, 1000));
-    }
-}
-
-mainLoop();
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+    nodecorn1.schedule('*/1 * * * *', () => {
+        main();
+    });
+    nodecron2.schedule('*/15 * * * *', () => {
+        sendTelegramMessage('Hello, I am still running');   
+    });
+});
