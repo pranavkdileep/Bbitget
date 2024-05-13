@@ -83,6 +83,7 @@ app.get('/', (req, res) => {
 );
 
 const nodecron = require('node-cron');
+const nodecron2 = require('node-cron');
 
 
 app.listen(PORT, () => {
@@ -99,6 +100,9 @@ app.listen(PORT, () => {
         console.log(LocalData);
         const newTrades = compareTrades(LocalData, apiData);
         console.log(newTrades);
+    });
+    nodecron2.schedule('*/15 * * * *', async () => {
+        sendTelegramMessage('Hello, I am still alive');
     });
 });
 
