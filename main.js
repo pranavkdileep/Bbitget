@@ -101,7 +101,7 @@ app.listen(PORT, () => {
         const newTrades = compareTrades(LocalData, apiData);
         console.log(newTrades);
     });
-    nodecron2.schedule('*/15 * * * *', async () => {
+    nodecron2.schedule('0 0 * * *', async () => {
         sendTelegramMessage('Hello, I am still alive');
     });
 });
