@@ -11,4 +11,6 @@ RUN chmod 777 /app/Data/data4.json
 
 RUN npm install
 
+EXPOSE 7860
+
 CMD ["node", "main"]
